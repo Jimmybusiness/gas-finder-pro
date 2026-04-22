@@ -25,15 +25,16 @@ def inject_css():
 html, body, [data-testid="stAppViewContainer"] { font-family: 'Inter', sans-serif !important; background-color: #F2F2F7 !important; }
 .block-container { max-width: 480px !important; padding: 0.5rem 1rem !important; }
 #MainMenu, footer, header { display: none !important; }
-.app-header { background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%); border-radius: 0 0 20px 20px; padding: 15px; margin: -0.5rem -1rem 15px -1rem; color: white; text-align: center; }
-.app-header h1 { font-size: 22px !important; margin: 0 !important; color: white !important; }
+.app-header { background: linear-gradient(135deg, #34C759 0%, #F5C518 100%); border-radius: 0 0 20px 20px; padding: 15px; margin: -0.5rem -1rem 15px -1rem; color: white; text-align: center; }
+.app-header h1 { font-size: 22px !important; margin: 0 !important; color: white !important; text-shadow: 0 1px 3px rgba(0,0,0,0.2); }
 .gps-box { background: white; border-radius: 12px; padding: 12px; margin-bottom: 15px; text-align: center; border: 1px solid #E5E5EA; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 .station-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; border-left: 4px solid #8E8E93; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 .station-card.best { border-left-color: #34C759; }
 .best-badge { position: absolute; top: 0; right: 0; background: #34C759; color: white; font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 0 12px 0 8px; }
 .price { font-size: 26px; font-weight: 900; color: #1C1C1E; }
 .price.green { color: #34C759; }
-.action-btn { display: block; width: 100%; text-align: center; padding: 10px; border-radius: 8px; text-decoration: none !important; font-size: 14px; font-weight: 700; color: white !important; background: #4285F4; margin-top: 12px; }
+.action-btn { display: block; width: 100%; text-align: center; padding: 10px; border-radius: 8px; text-decoration: none !important; font-size: 14px; font-weight: 700; color: white !important; background: linear-gradient(135deg, #34C759 0%, #30B350 100%); margin-top: 12px; }
+div.stSelectbox > div > div { border-color: #34C759 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -56,10 +57,10 @@ def main():
     loc = streamlit_geolocation()
     if loc and loc.get('latitude'):
         user_lat, user_lon = loc['latitude'], loc['longitude']
-        st.markdown('<p style="color:green; font-weight:600; margin:5px 0 0 0">✅ Position détectée</p>', unsafe_allow_html=True)
+        st.markdown('<p style="color:#34C759; font-weight:600; margin:5px 0 0 0">✅ Position détectée</p>', unsafe_allow_html=True)
     else:
         user_lat, user_lon = 47.90296, 1.90925
-        st.markdown('<p style="color:#FF9500; font-size:12px; margin:5px 0 0 0">👆 Cliquez sur la cible bleue pour vous localiser</p>', unsafe_allow_html=True)
+        st.markdown('<p style="color:#F5C518; font-size:12px; margin:5px 0 0 0">👆 Cliquez sur la cible bleue pour vous localiser</p>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
     # Filters
