@@ -25,18 +25,68 @@ def inject_css():
 html, body, [data-testid="stAppViewContainer"] { font-family: 'Inter', sans-serif !important; background-color: #F2F2F7 !important; }
 .block-container { max-width: 480px !important; padding: 0.5rem 1rem !important; }
 #MainMenu, footer, header { display: none !important; }
-.app-header { background: linear-gradient(135deg, #34C759 0%, #F5C518 100%); border-radius: 0 0 20px 20px; padding: 15px; margin: -0.5rem -1rem 15px -1rem; color: white; text-align: center; }
+.app-header {
+    background: linear-gradient(135deg, #34C759 0%, #F5C518 100%);
+    border-radius: 0 0 20px 20px;
+    padding: 18px 15px 15px 15px;
+    margin: -0.5rem -1rem 15px -1rem;
+    color: white;
+    text-align: center;
+}
+.app-header img {
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+    margin-bottom: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
 .app-header h1 { font-size: 22px !important; margin: 0 !important; color: white !important; text-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-.gps-box { background: white; border-radius: 12px; padding: 12px; margin-bottom: 15px; text-align: center; border: 1px solid #E5E5EA; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-.station-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; border-left: 4px solid #8E8E93; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+.app-header p { font-size: 11px; margin: 4px 0 0 0; opacity: 0.9; }
+.gps-box {
+    background: white;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 15px;
+    text-align: center;
+    border: 1px solid #E5E5EA;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+.station-card {
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-left: 4px solid #8E8E93;
+    position: relative;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
 .station-card.best { border-left-color: #34C759; }
 .best-badge { position: absolute; top: 0; right: 0; background: #34C759; color: white; font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 0 12px 0 8px; }
 .price { font-size: 26px; font-weight: 900; color: #1C1C1E; }
 .price.green { color: #34C759; }
-.action-btn { display: block; width: 100%; text-align: center; padding: 10px; border-radius: 8px; text-decoration: none !important; font-size: 14px; font-weight: 700; color: white !important; background: linear-gradient(135deg, #34C759 0%, #30B350 100%); margin-top: 12px; }
+.action-btn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+    text-decoration: none !important;
+    font-size: 14px;
+    font-weight: 700;
+    color: white !important;
+    background: linear-gradient(135deg, #34C759 0%, #30B350 100%);
+    margin-top: 12px;
+}
 div.stSelectbox > div > div { border-color: #34C759 !important; }
 </style>
 """, unsafe_allow_html=True)
+
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 def fetch_stations(lat, lon, radius_km, fuel_label):
     fuel_key = fuel_label.lower().replace("-","_") + "_prix"
@@ -50,9 +100,15 @@ def fetch_stations(lat, lon, radius_km, fuel_label):
 def main():
     inject_ios_icon()
     inject_css()
-    st.markdown('<div class="app-header"><h1>⛽ Essence Pas Chère</h1></div>', unsafe_allow_html=True)
-    
-    # GPS Header
+
+    # Header with ICON_URL displayed
+    st.markdown(f'''<div class="app-header">
+        <img src="{ICON_URL}" alt="Icon"/>
+        <h1>⛽ Essence Pas Chère</h1>
+        <p>Trouvez le carburant le moins cher près de vous</p>
+    </div>''', unsafe_allow_html=True)
+
+    # GPS Box with target button
     st.markdown('<div class="gps-box"><b>📍 Localisation GPS</b>', unsafe_allow_html=True)
     loc = streamlit_geolocation()
     if loc and loc.get('latitude'):
@@ -69,19 +125,40 @@ def main():
     with col2: radius = st.number_input("Rayon (km)", 1, 50, 5)
 
     raw = fetch_stations(user_lat, user_lon, radius, fuel)
-    if not raw: st.warning("Aucune station trouvée."); return
+    if not raw:
+        st.warning("Aucune station trouvée. Essayez un rayon plus large.")
+        return
 
+    fuel_key = fuel.lower().replace("-","_") + "_prix"
+    best_price = None
     for i, r in enumerate(raw):
-        price = r.get(fuel.lower().replace("-","_") + "_prix")
-        is_best = i == 0
-        gmaps = f"https://www.google.com/maps/dir/?api=1&destination={r['geom']['lat']},{r['geom']['lon']}"
+        price = r.get(fuel_key)
+        if price is None:
+            continue
+        if best_price is None:
+            best_price = price
+        is_best = (i == 0)
+        geom = r.get('geom', {})
+        lat2 = geom.get('lat', user_lat)
+        lon2 = geom.get('lon', user_lon)
+        dist = haversine(user_lat, user_lon, lat2, lon2)
+        gmaps = f"https://www.google.com/maps/dir/?api=1&destination={lat2},{lon2}"
         badge = '<div class="best-badge">🏆 MEILLEUR PRIX</div>' if is_best else ""
+        savings = ""
+        if not is_best and best_price and price > best_price:
+            diff = (price - best_price) * 40
+            savings = f'<div style="font-size:10px;color:#FF9500;margin-top:4px">+{diff:.2f}€ pour un plein de 40L vs meilleur prix</div>'
+
         html = f"""
         <div class="station-card {'best' if is_best else ''}">{badge}
             <div style="display:flex;justify-content:space-between;align-items:center">
-                <div><b style="font-size:15px">{r['adresse']}</b><br><span style="font-size:12px;color:#8E8E93">{r['cp']} {r['ville']}</span></div>
+                <div>
+                    <b style="font-size:15px">{r.get('adresse', 'Adresse inconnue')}</b><br>
+                    <span style="font-size:12px;color:#8E8E93">{r.get('cp', '')} {r.get('ville', '')}</span><br>
+                    <span style="font-size:11px;color:#8E8E93">📏 {dist:.1f} km</span>
+                </div>
                 <div class="price {'green' if is_best else ''}">{price:.3f}<small style="font-size:10px">€/L</small></div>
-            </div>
+            </div>{savings}
             <a href="{gmaps}" target="_blank" class="action-btn">📍 Itinéraire Google Maps</a>
         </div>
         """
